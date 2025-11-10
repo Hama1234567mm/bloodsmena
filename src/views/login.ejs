@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>Login</title>
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+	<link rel="stylesheet" href="/public/css/styles.css" />
+</head>
+<body>
+	<div style="min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; gap: 32px;">
+		<div id="notifications" class="notifications">
+			<% if (typeof error !== 'undefined' && error && error.length) { %>
+				<% error.forEach(e => { %>
+					<div class="toast toast-error"><%= e %></div>
+				<% }) %>
+			<% } %>
+			<% if (typeof success !== 'undefined' && success && success.length) { %>
+				<% success.forEach(s => { %>
+					<div class="toast toast-success"><%= s %></div>
+				<% }) %>
+			<% } %>
+		</div>
+		<div style="display: flex; align-items: center; gap: 16px; margin-bottom: 8px;">
+			<img class="nav-logo" src="/public/imgs/logo.png" alt="Logo" style="width: 56px; height: 56px; border-radius: 14px; object-fit: cover; box-shadow: 0 12px 20px rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.08);" />
+			<h1 style="margin: 0; font-size: 32px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.4px; color: var(--text);">bloods <span style="color: #ff3b3b;">mena</span></h1>
+		</div>
+		<section class="auth-container">
+			<div class="card">
+				<h1 class="card-title">Sign in</h1>
+				<p class="card-subtitle">Access your dashboard</p>
+				<form class="form" action="/login" method="post" autocomplete="off">
+					<div class="form-group">
+						<label for="username">Username</label>
+						<input id="username" name="username" type="text" placeholder="Enter username" required />
+					</div>
+					<div class="form-group">
+						<label for="password">Password</label>
+						<input id="password" name="password" type="password" placeholder="Enter password" required />
+					</div>
+					<button type="submit" class="btn btn-primary btn-full">Login</button>
+				</form>
+			</div>
+		</section>
+	</div>
+	<script src="/public/js/notify.js"></script>
+</body>
+</html>
+

@@ -1,0 +1,105 @@
+<section class="punish-page">
+	<header class="page-hero">
+		<div>
+			<h1>Dispute Management</h1>
+			<p class="muted">Manage user disputes and auto-disconnect settings.</p>
+		</div>
+		<% if (isOwner) { %>
+		<div class="switch-group">
+			<label class="switch">
+				<input type="checkbox" id="dispute-enabled" <%= settings.disputesEnabled !== false ? 'checked' : '' %> />
+				<span class="slider"></span>
+			</label>
+			<span class="switch-label"><%= settings.disputesEnabled !== false ? 'Enabled' : 'Disabled' %></span>
+		</div>
+		<% } %>
+	</header>
+
+	<% if (canEditPunishments || canEditEmbed) { %>
+	<div class="card-stack">
+		<% if (canEditPunishments) { %>
+		<article class="card">
+			<header class="card-head">
+				<div>
+					<h2>Create Dispute</h2>
+					<p class="muted">Create a dispute between two users to prevent them from being in the same voice channel.</p>
+				</div>
+				<span class="badge badge-soft">Roles: owner · co-owner · admin</span>
+			</header>
+			<form id="dispute-form" class="form-grid">
+				<div class="form-row">
+					<label for="dispute-user1">User 1 ID</label>
+					<input type="text" id="dispute-user1" name="dispute-user1" placeholder="Discord user ID" required />
+				</div>
+				<div class="form-row">
+					<label for="dispute-user2">User 2 ID</label>
+					<input type="text" id="dispute-user2" name="dispute-user2" placeholder="Discord user ID" required />
+				</div>
+				<div class="form-actions">
+					<button type="submit" class="btn btn-primary">Create Dispute</button>
+				</div>
+			</form>
+			<aside id="dispute-feedback" class="card-footer"></aside>
+		</article>
+
+		<article class="card">
+			<header class="card-head">
+				<div>
+					<h2>Active Disputes</h2>
+					<p class="muted">View and manage active disputes. Users in disputes will be automatically disconnected from shared voice channels.</p>
+				</div>
+				<% if (isOwner) { %>
+				<button class="btn btn-secondary btn-small" id="delete-all-disputes">Delete All</button>
+				<% } %>
+			</header>
+			<div id="disputes-list" class="disputes-list"></div>
+		</article>
+		<% } %>
+
+		<% if (canEditEmbed) { %>
+		<article class="card">
+			<header class="card-head">
+				<div>
+					<h2>System Settings</h2>
+					<p class="muted">Configure log channel and DM embed template for dispute notifications.</p>
+				</div>
+				<span class="badge badge-soft">Roles: owner · co-owner</span>
+			</header>
+			<form id="dispute-embed-form" class="form-grid">
+				<% if (isOwner) { %>
+				<div class="form-row">
+					<label for="disputeLogChannelId">Log channel ID</label>
+					<input type="text" id="disputeLogChannelId" name="disputeLogChannelId" placeholder="123456789012345678" value="<%= settings.disputeLogChannelId || '' %>" />
+				</div>
+				<% } %>
+				<div class="embed-config full">
+					<label>DM embed</label>
+					<div class="embed-form">
+						<div class="form-row">
+							<label for="disputeEmbedTitle">Title</label>
+							<input type="text" id="disputeEmbedTitle" name="disputeEmbedTitle" value="<%= settings.disputeEmbed?.title || '' %>" placeholder="Dispute Notice" />
+						</div>
+						<div class="form-row">
+							<label for="disputeEmbedDescription">Description</label>
+							<textarea id="disputeEmbedDescription" name="disputeEmbedDescription" rows="3" placeholder="Message shown to disconnected user"><%= settings.disputeEmbed?.description || '' %></textarea>
+						</div>
+						<div class="form-row">
+							<label for="disputeEmbedColor">Accent color</label>
+							<input type="color" id="disputeEmbedColor" name="disputeEmbedColor" value="<%= settings.disputeEmbed?.color ? '#' + Number(settings.disputeEmbed.color).toString(16).padStart(6,'0') : '#ff6b6b' %>" />
+						</div>
+					</div>
+				</div>
+				<div class="form-actions">
+					<button type="submit" class="btn btn-primary">Save settings</button>
+				</div>
+				<p class="muted">Tags available: &lt;dispute&gt;, &lt;user&gt;, &lt;server&gt;.</p>
+			</form>
+			<aside class="card-footer" id="dispute-embed-feedback"></aside>
+		</article>
+		<% } %>
+	</div>
+	<% } %>
+</section>
+<script id="dispute-data" type="application/json"><%- JSON.stringify({ disputesEnabled: settings.disputesEnabled !== false }) %></script>
+<script src="/public/js/disputes.js" defer></script>
+

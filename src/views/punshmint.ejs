@@ -1,0 +1,137 @@
+<section class="punish-page">
+<%
+	const dmEmbed = settings.dmEmbed || {};
+	const dmFields = Array.isArray(dmEmbed.fields) ? dmEmbed.fields : [];
+%>
+	<header class="page-hero">
+		<div>
+			<h1>Punishment Center</h1>
+			<p class="muted">Manage moderation flow for your Discord server.</p>
+		</div>
+		<% if (isOwner) { %>
+		<div class="switch-group">
+			<label class="switch">
+				<input type="checkbox" id="punish-enabled" <%= settings.punishmentsEnabled ? 'checked' : '' %> />
+				<span class="slider"></span>
+			</label>
+			<span class="switch-label"><%= settings.punishmentsEnabled ? 'Enabled' : 'Disabled' %></span>
+		</div>
+		<% } %>
+	</header>
+
+	<% if (canEditPunishments || canEditEmbed) { %>
+	<div class="card-stack">
+		<% if (canEditPunishments) { %>
+		<article class="card">
+			<header class="card-head">
+				<div>
+					<h2>Moderation Actions</h2>
+					<p class="muted">Apply actions directly. Warnings auto-timeout after three strikes.</p>
+				</div>
+				<span class="badge badge-soft">Roles: owner · co-owner · admin</span>
+			</header>
+			<form id="punish-form" class="form-grid">
+				<div class="form-row">
+					<label for="targetUserId">Target user ID</label>
+					<input type="text" id="targetUserId" name="targetUserId" placeholder="Discord user ID" required />
+				</div>
+				<div class="form-row">
+					<label for="action">Action</label>
+					<select id="action" name="action" required>
+						<option value="warn">Warn</option>
+						<option value="timeout">Timeout</option>
+						<option value="voice_mute">Force Voice Mute</option>
+						<option value="voice_deafen">Force Voice Deafen</option>
+					</select>
+				</div>
+				<div class="form-row" data-action="timeout">
+					<label for="duration">Duration (e.g. 30m, 1h)</label>
+					<input type="text" id="duration" name="duration" placeholder="1h" />
+				</div>
+				<div class="form-row full">
+					<label for="reason">Reason</label>
+					<textarea id="reason" name="reason" rows="3" placeholder="Reason for the action"></textarea>
+				</div>
+				<div class="form-actions">
+					<button type="submit" class="btn btn-primary">Execute</button>
+					<button type="button" class="btn btn-secondary" id="force-action">Force run</button>
+				</div>
+				<p class="form-hint">Force run ignores disabled state and attempts the action.</p>
+			</form>
+			<aside class="card-footer" id="punish-feedback"></aside>
+		</article>
+		<% } %>
+
+		<% if (canEditEmbed) { %>
+		<article class="card">
+			<header class="card-head">
+				<div>
+					<h2>System Settings</h2>
+					<p class="muted">Configure log channel and DM embed template.</p>
+				</div>
+				<span class="badge badge-soft">Roles: owner · co-owner</span>
+			</header>
+			<form id="settings-form" class="form-grid">
+				<% if (isOwner) { %>
+				<div class="form-row">
+					<label for="logChannelId">Log channel ID</label>
+					<input type="text" id="logChannelId" name="logChannelId" placeholder="123456789012345678" value="<%= settings.logChannelId || '' %>" />
+				</div>
+				<% } %>
+				<div class="embed-config full">
+					<label>DM embed</label>
+					<div class="embed-form">
+						<div class="form-row">
+							<label for="embedTitle">Title</label>
+							<input type="text" id="embedTitle" name="embedTitle" value="<%= dmEmbed.title || '' %>" placeholder="Moderation Notice" />
+						</div>
+						<div class="form-row">
+							<label for="embedDescription">Description</label>
+							<textarea id="embedDescription" name="embedDescription" rows="3" placeholder="Message shown to the user"><%= dmEmbed.description || '' %></textarea>
+						</div>
+						<div class="form-row">
+							<label for="embedColor">Accent color</label>
+							<input type="color" id="embedColor" name="embedColor" value="<%= dmEmbed.color ? '#' + Number(dmEmbed.color).toString(16).padStart(6,'0') : '#ff3b3b' %>" />
+						</div>
+						<div class="fields-section">
+							<header>
+								<h3>Fields</h3>
+								<button class="btn btn-secondary" type="button" id="add-field">Add field</button>
+							</header>
+							<div id="fields-list"></div>
+							<template id="field-template">
+								<div class="field-row">
+									<div class="form-row">
+										<label>Field name</label>
+										<input type="text" data-field="name" placeholder="Field title" />
+									</div>
+									<div class="form-row">
+										<label>Field value</label>
+										<textarea rows="2" data-field="value" placeholder="Field message"></textarea>
+									</div>
+									<div class="field-controls">
+										<label class="checkbox">
+											<input type="checkbox" data-field="inline" />
+											<span>Inline</span>
+										</label>
+										<button class="btn btn-secondary btn-small" type="button" data-action="remove">Remove</button>
+									</div>
+								</div>
+							</template>
+							<p class="muted">Tags available: &lt;reason&gt;, &lt;duration&gt;, &lt;servername&gt;, &lt;user&gt;, &lt;actor&gt;, &lt;action&gt;.</p>
+						</div>
+					</div>
+				</div>
+				<div class="form-actions">
+					<button type="submit" class="btn btn-primary">Save settings</button>
+				</div>
+			</form>
+			<aside class="card-footer" id="settings-feedback"></aside>
+		</article>
+		<% } %>
+	</div>
+	<% } %>
+</section>
+<script id="punshmint-data" type="application/json"><%- JSON.stringify({ fields: dmFields }) %></script>
+<script src="/public/js/punshmint.js" defer></script>
+

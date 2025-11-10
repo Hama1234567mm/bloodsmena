@@ -1,0 +1,118 @@
+<section class="punish-page">
+	<header class="page-hero">
+		<div>
+			<h1>Verification System</h1>
+			<p class="muted">Manage user verification flow and channel settings.</p>
+		</div>
+		<% if (isOwner) { %>
+		<div class="switch-group">
+			<label class="switch">
+				<input type="checkbox" id="verify-enabled" <%= settings.verifyEnabled !== false ? 'checked' : '' %> />
+				<span class="slider"></span>
+			</label>
+			<span class="switch-label"><%= settings.verifyEnabled !== false ? 'Enabled' : 'Disabled' %></span>
+		</div>
+		<% } %>
+	</header>
+
+	<% if (canEditEmbed || isOwner) { %>
+	<div class="card-stack">
+		<% if (isOwner) { %>
+		<article class="card">
+			<header class="card-head">
+				<div>
+					<h2>Channel Settings</h2>
+					<p class="muted">Configure verification channels and category.</p>
+				</div>
+				<span class="badge badge-soft">Role: owner</span>
+			</header>
+			<form id="verify-channels-form" class="form-grid">
+				<div class="form-row">
+					<label for="verifyCategoryId">Category ID</label>
+					<input type="text" id="verifyCategoryId" name="verifyCategoryId" placeholder="123456789012345678" value="<%= settings.verifyCategoryId || '' %>" />
+				</div>
+				<div class="form-row">
+					<label for="verifyLogChannelId">Log Channel ID</label>
+					<input type="text" id="verifyLogChannelId" name="verifyLogChannelId" placeholder="123456789012345678" value="<%= settings.verifyLogChannelId || '' %>" />
+				</div>
+				<div class="form-row">
+					<label for="verifyChannelId">Verify Channel ID</label>
+					<input type="text" id="verifyChannelId" name="verifyChannelId" placeholder="123456789012345678" value="<%= settings.verifyChannelId || '' %>" />
+				</div>
+				<div class="form-actions">
+					<button type="submit" class="btn btn-primary">Save Channel Settings</button>
+				</div>
+			</form>
+			<aside class="card-footer" id="verify-channels-feedback"></aside>
+		</article>
+
+		<article class="card">
+			<header class="card-head">
+				<div>
+					<h2>Role Settings</h2>
+					<p class="muted">Configure admin and gender roles for verification.</p>
+				</div>
+				<span class="badge badge-soft">Role: owner</span>
+			</header>
+			<form id="verify-roles-form" class="form-grid">
+				<div class="form-row">
+					<label for="verifyAdminRoleIds">Admin Role IDs (comma separated)</label>
+					<input type="text" id="verifyAdminRoleIds" name="verifyAdminRoleIds" placeholder="123456789012345678, 987654321098765432" value="<%= settings.verifyAdminRoleIds || '' %>" />
+				</div>
+				<div class="form-row">
+					<label for="verifyBoyRoleId">Boy Role ID</label>
+					<input type="text" id="verifyBoyRoleId" name="verifyBoyRoleId" placeholder="123456789012345678" value="<%= settings.verifyBoyRoleId || '' %>" />
+				</div>
+				<div class="form-row">
+					<label for="verifyGirlRoleId">Girl Role ID</label>
+					<input type="text" id="verifyGirlRoleId" name="verifyGirlRoleId" placeholder="123456789012345678" value="<%= settings.verifyGirlRoleId || '' %>" />
+				</div>
+				<div class="form-actions">
+					<button type="submit" class="btn btn-primary">Save Role Settings</button>
+				</div>
+			</form>
+			<aside class="card-footer" id="verify-roles-feedback"></aside>
+		</article>
+		<% } %>
+
+		<% if (canEditEmbed) { %>
+		<article class="card">
+			<header class="card-head">
+				<div>
+					<h2>Embed Settings</h2>
+					<p class="muted">Configure the verification request embed message.</p>
+				</div>
+				<span class="badge badge-soft">Roles: owner · co-owner</span>
+			</header>
+			<form id="verify-embed-form" class="form-grid">
+				<div class="embed-config full">
+					<label>Verification Embed</label>
+					<div class="embed-form">
+						<div class="form-row">
+							<label for="verifyEmbedTitle">Title</label>
+							<input type="text" id="verifyEmbedTitle" name="verifyEmbedTitle" value="<%= settings.verifyEmbed?.title || '' %>" placeholder="Verification Request" />
+						</div>
+						<div class="form-row">
+							<label for="verifyEmbedDescription">Description</label>
+							<textarea id="verifyEmbedDescription" name="verifyEmbedDescription" rows="3" placeholder="Message shown in verification request"><%= settings.verifyEmbed?.description || '' %></textarea>
+						</div>
+						<div class="form-row">
+							<label for="verifyEmbedColor">Accent color</label>
+							<input type="color" id="verifyEmbedColor" name="verifyEmbedColor" value="<%= settings.verifyEmbed?.color ? '#' + Number(settings.verifyEmbed.color).toString(16).padStart(6,'0') : '#5b8cff' %>" />
+						</div>
+					</div>
+				</div>
+				<div class="form-actions">
+					<button type="submit" class="btn btn-primary">Save Embed Settings</button>
+				</div>
+				<p class="muted">Available variables: &lt;user&gt; - User mention, &lt;channel&gt; - Channel name, &lt;admin&gt; - Admin mention.</p>
+			</form>
+			<aside class="card-footer" id="verify-embed-feedback"></aside>
+		</article>
+		<% } %>
+	</div>
+	<% } %>
+</section>
+<script id="verify-data" type="application/json"><%- JSON.stringify({ verifyEnabled: settings.verifyEnabled !== false }) %></script>
+<script src="/public/js/verify.js" defer></script>
+
