@@ -57,6 +57,16 @@ export function getDiscordClient() {
 				} catch (err) {
 					console.error('Error handling verify voice state update:', err);
 				}
+
+				// Handle temp voice system
+				try {
+					const { handleTempVoiceJoin, enforceTempVoiceJoin, handleTempVoiceLeave } = await import('../services/tempVoiceService.js');
+					await handleTempVoiceJoin(oldState, newState);
+					await enforceTempVoiceJoin(oldState, newState);
+					await handleTempVoiceLeave(oldState, newState);
+				} catch (err) {
+					console.error('Error handling temp voice:', err);
+				}
 			});
 			
 			// Set up button interaction listener for verify
@@ -68,6 +78,41 @@ export function getDiscordClient() {
 					} catch (err) {
 						console.error('Error handling verify button:', err);
 					}
+					// Temp voice buttons
+					try {
+						const { handleTempVoiceButtons } = await import('../services/tempVoiceService.js');
+						await handleTempVoiceButtons(interaction);
+					} catch (err) {
+						console.error('Error handling temp voice button:', err);
+					}
+				}
+				// Temp voice user selects
+				if (interaction.isAnySelectMenu?.() || interaction.isStringSelectMenu?.() || interaction.isUserSelectMenu?.()) {
+					try {
+						const { handleTempVoiceSelect } = await import('../services/tempVoiceService.js');
+						await handleTempVoiceSelect(interaction);
+					} catch (err) {
+						console.error('Error handling temp voice select:', err);
+					}
+				}
+				// Temp voice modal (rename)
+				if (interaction.isModalSubmit?.()) {
+					try {
+						const { handleTempVoiceModal } = await import('../services/tempVoiceService.js');
+						await handleTempVoiceModal(interaction);
+					} catch (err) {
+						console.error('Error handling temp voice modal:', err);
+					}
+				}
+			});
+
+			// Set up message listener for auto replies
+			client.on('messageCreate', async (message) => {
+				try {
+					const { handleMessageCreate } = await import('../services/autoreplyService.js');
+					await handleMessageCreate(message);
+				} catch (err) {
+					console.error('Error handling auto reply:', err);
 				}
 			});
 			

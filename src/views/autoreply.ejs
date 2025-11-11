@@ -1,0 +1,73 @@
+<section class="punish-page">
+	<header class="page-hero">
+		<div>
+			<h1>Auto Reply System</h1>
+			<p class="muted">Configure automated responses for specific user messages.</p>
+		
+		</div>
+		<button class="btn btn-secondary" id="new-entry">New Auto Reply</button>
+	</header>
+
+	<div class="card-stack">
+		<article class="card">
+			<header class="card-head">
+				<div>
+					<h2>Auto Reply Entries</h2>
+					<p class="muted">Define triggers and bot responses</p>
+				</div>
+			</header>
+			<div class="form-grid">
+				<div class="form-row full">
+					<div class="code" style="max-height:400px; overflow:auto;">
+						<table style="width:100%; border-collapse: collapse;" id="autoreply-table">
+							<thead>
+								<tr>
+									<th style="text-align:left; padding:6px;">Trigger</th>
+									<th style="text-align:left; padding:6px;">Match Type</th>
+									<th style="text-align:left; padding:6px;">Response</th>
+									<th style="text-align:right; padding:6px;">Actions</th>
+								</tr>
+							</thead>
+							<tbody id="autoreply-body"></tbody>
+						</table>
+					</div>
+				</div>
+			</div>
+		</article>
+	</div>
+
+	<div class="card" id="editor" style="display:none; margin-top:24px;">
+		<header class="card-head">
+			<div>
+				<h2 id="editor-title">New Auto Reply</h2>
+				<p class="muted">Specify trigger and bot message.</p>
+			</div>
+		</header>
+		<form id="autoreply-form" class="form-grid">
+			<input type="hidden" id="entry-id" />
+			<div class="form-row">
+				<label for="entry-trigger">User Message Trigger</label>
+				<input type="text" id="entry-trigger" placeholder="Example: hello" required />
+			</div>
+			<div class="form-row">
+				<label for="entry-match">Match Type</label>
+				<select id="entry-match">
+					<option value="starts">Starts with message</option>
+					<option value="contains" selected>Anywhere in message</option>
+					<option value="ends">Ends with message</option>
+				</select>
+			</div>
+			<div class="form-row full">
+				<label for="entry-response">Bot Reply</label>
+				<textarea id="entry-response" rows="3" placeholder="Bot response" required></textarea>
+			</div>
+			<div class="form-actions">
+				<button type="submit" class="btn btn-primary">Save</button>
+				<button type="button" class="btn btn-secondary" id="cancel-editor">Cancel</button>
+			</div>
+		</form>
+	</div>
+</section>
+
+<script id="autoreply-data" type="application/json"><%- JSON.stringify({ replies }) %></script>
+<script src="/public/js/autoreply.js" defer></script>

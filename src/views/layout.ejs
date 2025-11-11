@@ -11,7 +11,8 @@
 </head>
 <body>
 	<div class="app-shell">
-		<aside class="app-nav">
+    <% if (typeof hideNav === 'undefined' || !hideNav) { %>
+    <aside class="app-nav">
 			<div class="nav-inner">
 				<div class="nav-header">
 					<img class="nav-logo" src="/public/imgs/logo.png" alt="Logo" />
@@ -20,57 +21,88 @@
 				<nav class="nav-menu">
 					<a href="/" class="nav-link <%= title === 'Dashboard' ? 'is-active' : '' %>">
 						<span class="nav-link-icon" aria-hidden="true">
-							<img width="22" height="22" src="/public/imgs/home.png" alt="dashboard"" />
+							<img width="22" height="22" src="/public/imgs/home.png" alt="dashboard" />
 						</span>
 						<span class="nav-link-label">Dashboard</span>
 					</a>
 					<% if (typeof role !== 'undefined' && ['owner','co-owner','admin'].includes(role)) { %>
-					<a href="/punshmint" class="nav-link <%= title === 'Punishments' ? 'is-active' : '' %>">
-						<span class="nav-link-icon" aria-hidden="true">
-							<img width="22" height="22" src="/public/imgs/pun.png" alt="punishments"" /></span>
-						<span class="nav-link-label">Punishments</span>
-					</a>
-					<a href="/dispute" class="nav-link <%= title === 'Disputes' ? 'is-active' : '' %>">
-						<span class="nav-link-icon" aria-hidden="true">
-							<img width="22" height="22" src="/public/imgs/dis.png" alt="arguing"" />
-						</span>
-						<span class="nav-link-label">Disputes</span>
-					</a>
-					<% if (typeof role !== 'undefined' && ['owner','co-owner'].includes(role)) { %>
-					<a href="/verify" class="nav-link <%= title === 'Verification' ? 'is-active' : '' %>">
-						<span class="nav-link-icon" aria-hidden="true">
-							<img width="22" height="22" src="/public/imgs/ver.png" alt="verification"" />
-						</span>
-						<span class="nav-link-label">Verification</span>
-					</a>
-					<% } %>
+						<a href="/punshmint" class="nav-link <%= title === 'Punishments' ? 'is-active' : '' %>">
+							<span class="nav-link-icon" aria-hidden="true">
+								<img width="22" height="22" src="/public/imgs/pun.png" alt="punishments" /></span>
+							<span class="nav-link-label">Punishments</span>
+						</a>
+						<a href="/dispute" class="nav-link <%= title === 'Disputes' ? 'is-active' : '' %>">
+							<span class="nav-link-icon" aria-hidden="true">
+								<img width="22" height="22" src="/public/imgs/dis.png" alt="arguing" />
+							</span>
+							<span class="nav-link-label">Disputes</span>
+						</a>
+						<% if (typeof role !== 'undefined' && ['owner','co-owner'].includes(role)) { %>
+							<a href="/verify" class="nav-link <%= title === 'Verification' ? 'is-active' : '' %>">
+								<span class="nav-link-icon" aria-hidden="true">
+									<img width="22" height="22" src="/public/imgs/ver.png" alt="verification" />
+								</span>
+								<span class="nav-link-label">Verification</span>
+							</a>
+							<a href="/tempvoice" class="nav-link <%= title === 'Temp Voice' ? 'is-active' : '' %>">
+								<span class="nav-link-icon" aria-hidden="true">
+									<img width="22" height="22" src="/public/imgs/voice.png" alt="tempvoice" />
+								</span>
+								<span class="nav-link-label">Temp Voice</span>
+							</a>
+							<% if (role === 'owner') { %>
+								<a href="/autoreply" class="nav-link <%= title === 'Auto Reply' ? 'is-active' : '' %>">
+									<span class="nav-link-icon" aria-hidden="true">
+										<img width="22" height="22" src="/public/imgs/auto.png" alt="autoreply" />
+									</span>
+									<span class="nav-link-label">Auto Reply</span>
+								</a>
+							<% } %>
+						<% } %>
 					<% } %>
 				</nav>
 				<% if (typeof username !== 'undefined' && username) { %>
-				<form class="nav-logout" action="/logout" method="post">
-					<button class="icon-button" type="submit" aria-label="Logout">
-						<svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-							<path d="M15.5 7V5a2 2 0 0 0-2-2h-7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h7a2 2 0 0 0 2-2v-2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-							<path d="M9 12h11l-3-3M20 12l-3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-						</svg>
-					</button>
-					<span class="icon-label">Logout</span>
-				</form>
+					<form class="nav-logout" action="/logout" method="post">
+						<button class="icon-button" type="submit" aria-label="Logout">
+							<svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+								<path d="M15.5 7V5a2 2 0 0 0-2-2h-7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h7a2 2 0 0 0 2-2v-2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+								<path d="M9 12h11l-3-3M20 12l-3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+							</svg>
+						</button>
+						<span class="icon-label">Logout</span>
+					</form>
+					<% if (typeof role !== 'undefined' && role === 'owner') { %>
+						<a href="/logs" class="icon-button" title="Logs" aria-label="Logs" style="text-decoration: none; display: flex; align-items: center; gap: 10px;">
+							<svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+								<path d="M4 5h16v14H4z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+								<path d="M8 9h8M8 13h8M8 17h5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+							</svg>
+							<span class="icon-label">Logs</span>
+						</a>
+						<a href="/manager" class="icon-button" title="Account Manager" aria-label="Account Manager" style="text-decoration: none; display: flex; align-items: center; gap: 10px;">
+							<svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+								<path d="M12 3a9 9 0 1 0 0 18a9 9 0 0 0 0-18Z" stroke="currentColor" stroke-width="1.5"/>
+								<path d="M8 12h8M12 8v8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+							</svg>
+							<span class="icon-label">Manager</span>
+						</a>
+					<% } %>
 				<% } %>
 			</div>
-		</aside>
+    </aside>
+    <% } %>
 		<div class="app-content">
-			<header class="app-header">
-				<div class="page-heading"><%= title || 'Control Panel' %></div>
-				<% if (typeof username !== 'undefined' && username) { %>
-					<div class="user-chip">
-						<span class="chip-name"><%= username %></span>
-						<% if (typeof role !== 'undefined' && role) { %>
-							<span class="chip-role"><%= role %></span>
-						<% } %>
-					</div>
-				<% } %>
-			</header>
+            <header class="app-header">
+                <div class="page-heading"><%= title || 'Control Panel' %></div>
+                <% if ((typeof hideNav === 'undefined' || !hideNav) && typeof username !== 'undefined' && username) { %>
+                    <div class="user-chip">
+                        <span class="chip-name"><%= username %></span>
+                        <% if (typeof role !== 'undefined' && role) { %>
+                            <span class="chip-role"><%= role %></span>
+                        <% } %>
+                    </div>
+                <% } %>
+            </header>
 			<main class="app-main">
 				<div id="notifications" class="notifications">
 					<% if (error && error.length) { %>

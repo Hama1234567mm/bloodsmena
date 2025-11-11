@@ -78,6 +78,21 @@ export async function handleVerifyButton(interaction) {
 	if (!interaction.isButton()) return;
 	
 	const customId = interaction.customId;
+
+	// Respect verify system enabled flag
+	try {
+		const settings = await getOrCreateSettings(interaction.guild.id);
+		if (settings.verifyEnabled === false) {
+			// Gracefully inform the clicker and take no action
+			if (!interaction.deferred && !interaction.replied) {
+				await interaction.reply({ content: 'Verification system is currently disabled.', ephemeral: true }).catch(() => null);
+			}
+			return;
+		}
+	} catch {
+		// If settings fetch fails, do nothing
+		return;
+	}
 	
 	// Handle claim button
 	if (customId.startsWith('verify_claim_')) {
@@ -85,7 +100,7 @@ export async function handleVerifyButton(interaction) {
 		const verification = Array.from(activeVerifications.values()).find(v => v.userId === userId);
 		
 		if (!verification) {
-			await interaction.reply({ content: 'This verification request has expired.', ephemeral: true });
+			await interaction.reply({ content: 'This verification request has expired.', ephemeral: true }).catch(() => null);
 			return;
 		}
 		
@@ -110,6 +125,9 @@ export async function handleVerifyButton(interaction) {
 		verification.adminId = adminMember.id;
 		verification.voiceChannelId = adminMember.voice.channel.id;
 		activeVerifications.set(verification.messageId, verification);
+
+		// Acknowledge now since we will edit the message
+		await interaction.deferUpdate().catch(() => null);
 		
 		// Create new voice channel in category
 		if (!settings.verifyCategoryId) {
@@ -155,9 +173,29 @@ export async function handleVerifyButton(interaction) {
 			return;
 		}
 		
-		// Move user and admin to new channel
+		// Move user and admin to new channel (no force mute/deafen applied anywhere)
 		await userMember.voice.setChannel(newChannel.id).catch(() => null);
 		await adminMember.voice.setChannel(newChannel.id).catch(() => null);
+
+		// If nobody connects to the newly created channel, auto-delete it shortly
+		setTimeout(async () => {
+			try {
+				const freshChannel = await interaction.guild.channels.fetch(newChannel.id).catch(() => null);
+				if (!freshChannel) return;
+
+				if (freshChannel.members.size === 0) {
+					await freshChannel.delete().catch(() => null);
+
+					// Clean up active verification entry if it still points to this channel
+					const stillActive = activeVerifications.get(verification.messageId);
+					if (stillActive && stillActive.voiceChannelId === newChannel.id) {
+						activeVerifications.delete(verification.messageId);
+					}
+				}
+			} catch {
+				// noop
+			}
+		}, 5_000);
 		
 		// Update embed with claimed info and add gender buttons
 		const updatedEmbed = buildVerifyEmbed(settings, {
@@ -182,17 +220,10 @@ export async function handleVerifyButton(interaction) {
 		
 		const newRow = new ActionRowBuilder().addComponents(girlButton, boyButton);
 		
-		if (interaction.deferred || interaction.replied) {
-			await interaction.editReply({
-				embeds: [updatedEmbed],
-				components: [newRow]
-			});
-		} else {
-			await interaction.update({
-				embeds: [updatedEmbed],
-				components: [newRow]
-			});
-		}
+		await interaction.editReply({
+			embeds: [updatedEmbed],
+			components: [newRow]
+		});
 		
 		verification.voiceChannelId = newChannel.id;
 		activeVerifications.set(verification.messageId, verification);
@@ -205,7 +236,7 @@ export async function handleVerifyButton(interaction) {
 		const verification = Array.from(activeVerifications.values()).find(v => v.userId === userId);
 		
 		if (!verification) {
-			await interaction.reply({ content: 'This verification request has expired.', ephemeral: true });
+			await interaction.reply({ content: 'This verification request has expired.', ephemeral: true }).catch(() => null);
 			return;
 		}
 		
@@ -236,16 +267,22 @@ export async function handleVerifyButton(interaction) {
 		finalEmbed.setDescription(finalEmbed.data.description + `\n\n**Claimed by:** <@${verification.adminId}>\n**Verified as:** ${gender === 'girl' ? '👩 Girl' : '👨 Boy'}`);
 		finalEmbed.setColor(0x27c093); // Success green
 		
-		if (interaction.deferred || interaction.replied) {
-			await interaction.editReply({
-				embeds: [finalEmbed],
-				components: []
-			});
-		} else {
-			await interaction.update({
-				embeds: [finalEmbed],
-				components: []
-			});
+		await interaction.deferUpdate().catch(() => null);
+		await interaction.editReply({
+			embeds: [finalEmbed],
+			components: []
+		});
+		
+		// After verification completes, delete the verification voice channel if it's empty
+		try {
+			if (verification.voiceChannelId) {
+				const vChan = await interaction.guild.channels.fetch(verification.voiceChannelId).catch(() => null);
+				if (vChan && vChan.members.size === 0) {
+					await vChan.delete().catch(() => null);
+				}
+			}
+		} catch {
+			// noop
 		}
 		
 		// Remove from active verifications
@@ -265,16 +302,19 @@ export async function handleVerifyVoiceLeave(oldState, newState) {
 		v => v.voiceChannelId === oldState.channel.id
 	);
 	
-	if (!verification) return;
+	const channel = oldState.channel;
+	// If we still track the verification OR it matches verify channel pattern, delete when empty
+	const looksLikeVerifyChannel = !!channel && typeof channel.name === 'string' && channel.name.toLowerCase().startsWith('verify-') && (!!settings.verifyCategoryId ? channel.parentId === settings.verifyCategoryId : true);
+	if (!verification && !looksLikeVerifyChannel) {
+		return;
+	}
 	
 	// Check if channel is empty
-	const channel = oldState.channel;
 	if (channel.members.size === 0) {
-		// Delete channel
 		await channel.delete().catch(() => null);
-		
-		// Remove from active verifications
-		activeVerifications.delete(verification.messageId);
+		if (verification) {
+			activeVerifications.delete(verification.messageId);
+		}
 	}
 }
 

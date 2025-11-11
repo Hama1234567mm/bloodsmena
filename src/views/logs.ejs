@@ -1,0 +1,78 @@
+<section class="punish-page">
+	<header class="page-hero">
+		<div>
+			<h1>System Logs</h1>
+			<p class="muted">Owner view: accounts and recent actions.</p>
+		</div>
+	</header>
+
+	<div class="card-stack">
+		<article class="card">
+			<header class="card-head">
+				<div>
+					<h2>User Accounts</h2>
+					<p class="muted">All users with panel access</p>
+				</div>
+			</header>
+			<div class="form-grid">
+				<div class="form-row full">
+					<div class="code" style="max-height: 300px; overflow: auto;">
+						<table style="width:100%; border-collapse: collapse;">
+							<thead>
+								<tr>
+									<th style="text-align:left; padding:6px;">Username</th>
+									<th style="text-align:left; padding:6px;">Role</th>
+								</tr>
+							</thead>
+							<tbody>
+								<% (users || []).forEach(u => { %>
+								<tr>
+									<td style="padding:6px;"><%= u.username %></td>
+									<td style="padding:6px; text-transform: capitalize;"><%= u.role %></td>
+								</tr>
+								<% }) %>
+							</tbody>
+						</table>
+					</div>
+				</div>
+			</div>
+		</article>
+
+		<article class="card">
+			<header class="card-head">
+				<div>
+					<h2>Recent Actions</h2>
+					<p class="muted">Latest moderation actions</p>
+				</div>
+			</header>
+			<div class="form-grid">
+				<div class="form-row full">
+					<div class="code" style="max-height: 400px; overflow: auto;">
+						<table style="width:100%; border-collapse: collapse;">
+							<thead>
+								<tr>
+									<th style="text-align:left; padding:6px;">Time</th>
+									<th style="text-align:left; padding:6px;">Action</th>
+									<th style="text-align:left; padding:6px;">Target</th>
+									<th style="text-align:left; padding:6px;">By</th>
+									<th style="text-align:left; padding:6px;">Reason</th>
+								</tr>
+							</thead>
+							<tbody>
+								<% (actions || []).forEach(a => { %>
+								<tr>
+									<td style="padding:6px;"><%= new Date(a.createdAt).toLocaleString() %></td>
+									<td style="padding:6px; text-transform: uppercase;"><%= a.action %></td>
+									<td style="padding:6px;"><%= a.targetTag %> (<%= a.targetUserId %>)</td>
+									<td style="padding:6px;"><%= a.performedByName %> (<%= a.performedByRole %>)</td>
+									<td style="padding:6px;"><%= a.reason || '' %></td>
+								</tr>
+								<% }) %>
+							</tbody>
+						</table>
+					</div>
+				</div>
+			</div>
+		</article>
+	</div>
+</section>

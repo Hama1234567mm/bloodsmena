@@ -1,0 +1,114 @@
+<section class="punish-page">
+	<header class="page-hero">
+		<div>
+			<h1>Temp Voice</h1>
+			<p class="muted">Create temporary voice channels with owner controls.</p>
+		</div>
+		<% if (isOwner) { %>
+		<div class="switch-group">
+			<label class="switch">
+				<input type="checkbox" id="verify-enabled" <%= settings.tempVoiceEnabled !== false ? 'checked' : '' %> />
+				<span class="slider"></span>
+			</label>
+			<span class="switch-label"><%= settings.tempVoiceEnabled !== false ? 'Enabled' : 'Disabled' %></span>
+		</div>
+		<% } %>
+	</header>
+
+	<div class="card-stack">
+		<% if (isOwner) { %>
+		<article class="card">
+			<header class="card-head">
+				<div>
+					<h2>Channel Settings</h2>
+					<p class="muted">Hub voice, category, log channel, and emojis.</p>
+				</div>
+				<span class="badge badge-soft">Role: owner</span>
+			</header>
+			<form id="tv-channels-form" class="form-grid">
+				<div class="form-row">
+					<label for="hubChannel">Hub Voice Channel ID</label>
+					<input type="text" id="hubChannel" name="tempVoiceHubChannelId" value="<%= settings.tempVoiceHubChannelId || '' %>" />
+				</div>
+				<div class="form-row">
+					<label for="categoryId">Category ID</label>
+					<input type="text" id="categoryId" name="tempVoiceCategoryId" value="<%= settings.tempVoiceCategoryId || '' %>" />
+				</div>
+				<div class="form-row">
+					<label for="logChannel">Log Channel ID</label>
+					<input type="text" id="logChannel" name="tempVoiceLogChannelId" value="<%= settings.tempVoiceLogChannelId || '' %>" />
+				</div>
+				<div class="form-row full">
+					<label for="accessRoles">Access Role IDs (comma separated)</label>
+					<input type="text" id="accessRoles" name="tempVoiceAccessRoleIds" value="<%= settings.tempVoiceAccessRoleIds || '' %>" />
+				</div>
+				<div class="form-row full">
+					<label for="emojis">Emojis (comma separated)</label>
+					<input type="text" id="emojis" name="tempVoiceEmojis" value="<%= settings.tempVoiceEmojis || '' %>" />
+				</div>
+				<div class="form-actions">
+					<button type="submit" class="btn btn-primary">Save</button>
+				</div>
+			</form>
+			<aside class="card-footer" id="tv-channels-feedback"></aside>
+		</article>
+		<% } %>
+
+		<article class="card">
+			<header class="card-head">
+				<div>
+					<h2>DM Embed</h2>
+					<p class="muted">Direct message sent on enforcement (block/lock).</p>
+				</div>
+				<span class="badge badge-soft">Roles: owner · co-owner</span>
+			</header>
+			<form id="tv-dm-embed-form" class="form-grid">
+				<div class="form-row">
+					<label for="dm_title">Title</label>
+					<input type="text" id="dm_title" name="title" value="<%= settings.tempVoiceDmEmbed?.title || '' %>" />
+				</div>
+				<div class="form-row full">
+					<label for="dm_desc">Description</label>
+					<textarea id="dm_desc" name="description" rows="3"><%= settings.tempVoiceDmEmbed?.description || '' %></textarea>
+				</div>
+				<div class="form-row">
+					<label for="dm_color">Color</label>
+					<input type="color" id="dm_color" name="color" value="<%= settings.tempVoiceDmEmbed?.color ? '#' + Number(settings.tempVoiceDmEmbed.color).toString(16).padStart(6,'0') : '#5b8cff' %>" />
+				</div>
+				<div class="form-actions">
+					<button type="submit" class="btn btn-primary">Save</button>
+				</div>
+			</form>
+			<aside class="card-footer" id="tv-dm-embed-feedback"></aside>
+		</article>
+
+		<article class="card">
+			<header class="card-head">
+				<div>
+					<h2>Control Panel Embed</h2>
+					<p class="muted">Embed shown inside the created voice channel.</p>
+				</div>
+				<span class="badge badge-soft">Roles: owner · co-owner</span>
+			</header>
+			<form id="tv-control-embed-form" class="form-grid">
+				<div class="form-row">
+					<label for="cp_title">Title</label>
+					<input type="text" id="cp_title" name="title" value="<%= settings.tempVoiceControlEmbed?.title || '' %>" />
+				</div>
+				<div class="form-row full">
+					<label for="cp_desc">Description</label>
+					<textarea id="cp_desc" name="description" rows="3"><%= settings.tempVoiceControlEmbed?.description || '' %></textarea>
+				</div>
+				<div class="form-row">
+					<label for="cp_color">Color</label>
+					<input type="color" id="cp_color" name="color" value="<%= settings.tempVoiceControlEmbed?.color ? '#' + Number(settings.tempVoiceControlEmbed.color).toString(16).padStart(6,'0') : '#5b8cff' %>" />
+				</div>
+				<div class="form-actions">
+					<button type="submit" class="btn btn-primary">Save</button>
+				</div>
+			</form>
+			<aside class="card-footer" id="tv-control-embed-feedback"></aside>
+		</article>
+	</div>
+</section>
+<script src="/public/js/tempvoice.js" defer></script>

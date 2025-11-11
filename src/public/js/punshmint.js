@@ -32,6 +32,51 @@ document.addEventListener('DOMContentLoaded', () => {
 	const addFieldBtn = document.getElementById('add-field');
 	const template = document.getElementById('field-template');
 
+	// Active voice actions rendering
+	const tableBody = document.getElementById('voice-actions-body');
+	async function loadVoiceActions() {
+		if (!tableBody) return;
+		try {
+			const res = await fetch('/api/voice-actions', { credentials: 'same-origin' });
+			const data = await res.json().catch(() => ({}));
+			if (!data.ok) return;
+			renderVoiceActions(tableBody, data.actions || []);
+		} catch {}
+	}
+
+	function renderVoiceActions(tbody, actions) {
+		tbody.innerHTML = '';
+		const now = Date.now();
+		actions.forEach(a => {
+			const tr = document.createElement('tr');
+			const userTd = document.createElement('td'); userTd.style.padding = '6px'; userTd.textContent = a.tag || a.userId;
+			const typeTd = document.createElement('td'); typeTd.style.padding = '6px'; typeTd.textContent = a.type === 'mute' ? 'Voice Mute' : 'Voice Deafen';
+			const expTd = document.createElement('td'); expTd.style.padding = '6px'; expTd.dataset.expires = String(a.expiresAt || 0);
+			tr.appendChild(userTd); tr.appendChild(typeTd); tr.appendChild(expTd);
+			tbody.appendChild(tr);
+		});
+		updateCountdowns(tbody);
+	}
+
+	function updateCountdowns(tbody) {
+		const rows = tbody ? [...tbody.querySelectorAll('td[data-expires]')] : [];
+		const now = Date.now();
+		rows.forEach(td => {
+			const exp = Number(td.dataset.expires || '0');
+			const ms = exp - now;
+			td.textContent = ms > 0 ? formatMs(ms) : 'expired';
+		});
+	}
+
+	function formatMs(ms) {
+		const s=Math.floor(ms/1000); const m=Math.floor((s%3600)/60); const h=Math.floor(s/3600); const sec=s%60;
+		const parts=[]; if(h) parts.push(h+'h'); if(m) parts.push(m+'m'); parts.push(sec+'s');
+		return parts.join(' ');
+	}
+
+	setInterval(() => updateCountdowns(tableBody), 1000);
+	loadVoiceActions();
+
 	if (actionSelect && durationRow) {
 		actionSelect.addEventListener('change', () => toggleDurationRow(actionSelect.value, durationRow));
 		toggleDurationRow(actionSelect.value, durationRow);

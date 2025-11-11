@@ -7,7 +7,9 @@ const UserSchema = new mongoose.Schema(
 	{
 		username: { type: String, unique: true, required: true, trim: true, minlength: 3, maxlength: 30 },
 		passwordHash: { type: String, required: true },
-		role: { type: String, enum: roles, required: true }
+		role: { type: String, enum: roles, required: true },
+		// When set, the account cannot access authenticated routes until this time
+		webTimeoutUntil: { type: Date }
 	},
 	{ timestamps: true }
 );

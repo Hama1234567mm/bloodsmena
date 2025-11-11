@@ -1,0 +1,68 @@
+<section class="dashboard">
+  <header class="page-hero">
+    <div>
+      <h1>Account Manager</h1>
+      <p class="muted">Create, delete, or set timeouts on accounts.</p>
+    </div>
+  </header>
+
+  <div class="card-stack">
+    <article class="card">
+      <header class="card-head">
+        <div>
+          <h2>Create Account</h2>
+          <p class="muted">Only owner can create and manage accounts.</p>
+        </div>
+      </header>
+      <form id="create-form" class="form-grid">
+        <div class="form-row">
+          <label for="username">Username</label>
+          <input type="text" id="username" required />
+        </div>
+        <div class="form-row">
+          <label for="password">Password</label>
+          <input type="password" id="password" required />
+        </div>
+        <div class="form-row">
+          <label for="role">Role</label>
+          <select id="role" required>
+            <option value="owner">owner</option>
+            <option value="co-owner">co-owner</option>
+            <option value="admin" selected>admin</option>
+          </select>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="button-primary">Create</button>
+        </div>
+        <p id="create-msg" class="form-hint"></p>
+      </form>
+    </article>
+
+    <article class="card">
+      <header class="card-head">
+        <div>
+          <h2>Existing Users</h2>
+          <p class="muted">Delete or set a timeout. Owner cannot be deleted or timed out.</p>
+        </div>
+      </header>
+      <div class="panel">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Username</th>
+              <th>Role</th>
+              <th>Timeout</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="users-body"></tbody>
+        </table>
+      </div>
+    </article>
+  </div>
+</section>
+
+<script id="page-data" type="application/json">
+<%- JSON.stringify({ username, role }) %>
+</script>
+<script src="/public/js/manager.js" defer></script>

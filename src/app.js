@@ -31,9 +31,17 @@ app.use(helmet());
 app.use(morgan('dev'));
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
+// CORS for external UI on different port
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,DELETE,PUT,OPTIONS');
+  if (req.method === 'OPTIONS') return res.sendStatus(200);
+  next();
+});
 app.use(
 	session({
-		secret: process.env.SESSION_SECRET || 'change_this_secret',
+		secret: process.env.SESSION_SECRET ,
 		resave: false,
 		saveUninitialized: false,
 		cookie: {
@@ -86,5 +94,10 @@ mongoose
 		console.error('MongoDB connection error:', err);
 		process.exit(1);
 	});
+
+// 404 handler (must be after routes)
+app.use((req, res) => {
+  res.status(404).render('404', { title: 'Not Found' });
+});
 
 

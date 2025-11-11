@@ -15,6 +15,8 @@ import {
 	deleteAllDisputes
 } from '../services/disputeService.js';
 import { getBotStats, getSystemStatus } from '../services/botStatsService.js';
+import { getActiveVoiceActions } from '../services/punishmentService.js';
+import { getDiscordClient, resolveGuild } from '../bot/client.js';
 
 const router = express.Router();
 
@@ -25,21 +27,38 @@ function requireSession(req, res, next) {
 	next();
 }
 
-router.post('/accounts', async (req, res) => {
+async function requireNotTimedOut(req, res, next) {
+  try {
+    const user = await User.findById(req.session.userId);
+    if (user?.webTimeoutUntil && user.webTimeoutUntil > new Date()) {
+      return res.status(403).json({ ok: false, error: 'timed_out', until: user.webTimeoutUntil });
+    }
+    return next();
+  } catch (err) {
+    console.error('Timeout check error:', err);
+    return res.status(500).json({ ok: false, error: 'internal_error' });
+  }
+}
+
+router.post('/accounts', requireSession, requireNotTimedOut, async (req, res) => {
 	try {
-		const { username, password, role } = req.body;
-		if (!username || !password || !role) {
-			return res.status(400).json({ ok: false, error: 'username, password, and role are required' });
+		const { role } = req.session;
+		if (role !== 'owner') {
+			return res.status(403).json({ ok: false, error: 'forbidden' });
 		}
-		if (!allowedRoles.includes(role)) {
-			return res.status(400).json({ ok: false, error: `role must be one of: ${allowedRoles.join(', ')}` });
-		}
+    const { username, password, role: userRole } = req.body;
+    if (!username || !password || !userRole) {
+      return res.status(400).json({ ok: false, error: 'username, password, and role are required' });
+    }
+    if (!allowedRoles.includes(userRole)) {
+      return res.status(400).json({ ok: false, error: `role must be one of: ${allowedRoles.join(', ')}` });
+    }
 		const existing = await User.findOne({ username });
 		if (existing) {
 			return res.status(409).json({ ok: false, error: 'username already exists' });
 		}
 		const passwordHash = await User.hashPassword(password);
-		const user = await User.create({ username, passwordHash, role });
+    const user = await User.create({ username, passwordHash, role: userRole });
 		return res.status(201).json({ ok: true, id: user._id.toString(), username: user.username, role: user.role });
 	} catch (err) {
 		console.error('Create account error:', err);
@@ -47,7 +66,22 @@ router.post('/accounts', async (req, res) => {
 	}
 });
 
-router.post('/punishments', requireSession, async (req, res) => {
+// Public: list accounts (minimal fields)
+router.get('/accounts', requireSession, requireNotTimedOut, async (req, res) => {
+  try {
+    const { role } = req.session;
+    if (role !== 'owner') {
+      return res.status(403).json({ ok: false, error: 'forbidden' });
+    }
+    const users = await User.find({}, { username: 1, role: 1, webTimeoutUntil: 1 }).sort({ username: 1 }).lean();
+    return res.json({ ok: true, users });
+  } catch (err) {
+    console.error('List accounts error:', err);
+    return res.status(500).json({ ok: false, error: 'internal_error' });
+  }
+});
+
+router.post('/punishments', requireSession, requireNotTimedOut, async (req, res) => {
 	try {
 		const { role, userId } = req.session;
 		if (!roleAllowsPunishments(role)) {
@@ -78,7 +112,7 @@ router.post('/punishments', requireSession, async (req, res) => {
 	}
 });
 
-router.post('/settings/punishments', requireSession, async (req, res) => {
+router.post('/settings/punishments', requireSession, requireNotTimedOut, async (req, res) => {
 	try {
 		const { role } = req.session;
 		if (!roleAllowsEmbedSettings(role)) {
@@ -104,7 +138,7 @@ router.post('/settings/punishments', requireSession, async (req, res) => {
 	}
 });
 
-router.get('/settings/punishments', requireSession, async (req, res) => {
+router.get('/settings/punishments', requireSession, requireNotTimedOut, async (req, res) => {
 	try {
 		const settings = await getOrCreateSettings(process.env.MAIN_GUILD_ID || 'default');
 		return res.json({ ok: true, settings });
@@ -113,7 +147,7 @@ router.get('/settings/punishments', requireSession, async (req, res) => {
 	}
 });
 
-router.post('/disputes', requireSession, async (req, res) => {
+router.post('/disputes', requireSession, requireNotTimedOut, async (req, res) => {
 	try {
 		const { role } = req.session;
 		if (!roleAllowsPunishments(role)) {
@@ -140,7 +174,7 @@ router.post('/disputes', requireSession, async (req, res) => {
 	}
 });
 
-router.get('/disputes', requireSession, async (req, res) => {
+router.get('/disputes', requireSession, requireNotTimedOut, async (req, res) => {
 	try {
 		const disputes = await getActiveDisputes(process.env.MAIN_GUILD_ID || 'default');
 		return res.json({ ok: true, disputes });
@@ -149,7 +183,7 @@ router.get('/disputes', requireSession, async (req, res) => {
 	}
 });
 
-router.delete('/disputes/:id', requireSession, async (req, res) => {
+router.delete('/disputes/:id', requireSession, requireNotTimedOut, async (req, res) => {
 	try {
 		const { role } = req.session;
 		if (!roleAllowsPunishments(role)) {
@@ -165,7 +199,7 @@ router.delete('/disputes/:id', requireSession, async (req, res) => {
 	}
 });
 
-router.delete('/disputes', requireSession, async (req, res) => {
+router.delete('/disputes', requireSession, requireNotTimedOut, async (req, res) => {
 	try {
 		const { role } = req.session;
 		if (role !== 'owner') {
@@ -178,7 +212,7 @@ router.delete('/disputes', requireSession, async (req, res) => {
 	}
 });
 
-router.get('/settings/disputes', requireSession, async (req, res) => {
+router.get('/settings/disputes', requireSession, requireNotTimedOut, async (req, res) => {
 	try {
 		const settings = await getOrCreateSettings(process.env.MAIN_GUILD_ID || 'default');
 		return res.json({ ok: true, settings });
@@ -187,7 +221,7 @@ router.get('/settings/disputes', requireSession, async (req, res) => {
 	}
 });
 
-router.post('/settings/disputes', requireSession, async (req, res) => {
+router.post('/settings/disputes', requireSession, requireNotTimedOut, async (req, res) => {
 	try {
 		const { role } = req.session;
 		if (!roleAllowsEmbedSettings(role)) {
@@ -220,7 +254,7 @@ router.post('/settings/disputes', requireSession, async (req, res) => {
 	}
 });
 
-router.get('/settings/verify', requireSession, async (req, res) => {
+router.get('/settings/verify', requireSession, requireNotTimedOut, async (req, res) => {
 	try {
 		const settings = await getOrCreateSettings(process.env.MAIN_GUILD_ID || 'default');
 		return res.json({ ok: true, settings });
@@ -229,7 +263,7 @@ router.get('/settings/verify', requireSession, async (req, res) => {
 	}
 });
 
-router.post('/settings/verify', requireSession, async (req, res) => {
+router.post('/settings/verify', requireSession, requireNotTimedOut, async (req, res) => {
 	try {
 		const { role } = req.session;
 		const isOwner = role === 'owner';
@@ -293,7 +327,123 @@ router.post('/settings/verify', requireSession, async (req, res) => {
 	}
 });
 
-router.get('/bot-stats', requireSession, async (req, res) => {
+// Active voice mutes/deafens
+router.get('/voice-actions', requireSession, requireNotTimedOut, async (req, res) => {
+	try {
+		const { role } = req.session;
+		if (!roleAllowsPunishments(role)) {
+			return res.status(403).json({ ok: false, error: 'forbidden' });
+		}
+		const guildId = process.env.MAIN_GUILD_ID || 'default';
+		const list = getActiveVoiceActions().filter(a => a.guildId === guildId);
+		const client = await getDiscordClient();
+		let guild = null;
+		try { guild = await resolveGuild(client, guildId); } catch {}
+		const enriched = [];
+		for (const item of list) {
+			let tag = '';
+			if (guild) {
+				try {
+					const m = await guild.members.fetch(item.userId).catch(() => null);
+					tag = m ? (m.user.tag || m.user.username) : '';
+				} catch {}
+			}
+			enriched.push({ ...item, tag });
+		}
+		return res.json({ ok: true, actions: enriched });
+	} catch (error) {
+		console.error('Fetch voice actions error:', error);
+		return res.status(500).json({ ok: false, error: 'internal_error' });
+	}
+});
+
+// Auto replies (owner only)
+router.get('/autoreply', requireSession, requireNotTimedOut, async (req, res) => {
+	try {
+		if (req.session.role !== 'owner') return res.status(403).json({ ok: false, error: 'forbidden' });
+		const settings = await getOrCreateSettings(process.env.MAIN_GUILD_ID || 'default');
+		return res.json({ ok: true, replies: settings.autoReplies || [] });
+	} catch (error) {
+		console.error('Fetch autoreplies error:', error);
+		return res.status(500).json({ ok: false, error: 'internal_error' });
+	}
+});
+
+router.post('/autoreply', requireSession, requireNotTimedOut, async (req, res) => {
+	try {
+		if (req.session.role !== 'owner') return res.status(403).json({ ok: false, error: 'forbidden' });
+		const { trigger, response, matchType, id } = req.body || {};
+		if (!trigger || !response) return res.status(400).json({ ok: false, error: 'trigger and response required' });
+		const settings = await getOrCreateSettings(process.env.MAIN_GUILD_ID || 'default');
+		const safeMatch = ['starts', 'contains', 'ends'].includes(matchType) ? matchType : 'contains';
+		if (id) {
+			const target = settings.autoReplies.id(id);
+			if (!target) return res.status(404).json({ ok: false, error: 'Not found' });
+			target.trigger = trigger;
+			target.response = response;
+			target.matchType = safeMatch;
+		} else {
+			settings.autoReplies.push({ trigger, response, matchType: safeMatch });
+		}
+		await settings.save();
+		return res.json({ ok: true, replies: settings.autoReplies });
+	} catch (error) {
+		console.error('Save autoreply error:', error);
+		return res.status(500).json({ ok: false, error: 'internal_error' });
+	}
+});
+
+router.delete('/autoreply/:id', requireSession, requireNotTimedOut, async (req, res) => {
+	try {
+		if (req.session.role !== 'owner') return res.status(403).json({ ok: false, error: 'forbidden' });
+		const settings = await getOrCreateSettings(process.env.MAIN_GUILD_ID || 'default');
+		const target = settings.autoReplies.id(req.params.id);
+		if (!target) return res.status(404).json({ ok: false, error: 'Not found' });
+		target.deleteOne();
+		await settings.save();
+		return res.json({ ok: true });
+	} catch (error) {
+		console.error('Delete autoreply error:', error);
+		return res.status(500).json({ ok: false, error: 'internal_error' });
+	}
+});
+
+// Temp voice settings
+router.get('/settings/tempvoice', requireSession, requireNotTimedOut, async (req, res) => {
+	try {
+		const settings = await getOrCreateSettings(process.env.MAIN_GUILD_ID || 'default');
+		return res.json({ ok: true, settings });
+	} catch (error) {
+		return res.status(500).json({ ok: false, error: 'failed_to_fetch' });
+	}
+});
+
+router.post('/settings/tempvoice', requireSession, requireNotTimedOut, async (req, res) => {
+	try {
+		const { role } = req.session;
+		const isOwner = role === 'owner';
+		const canEditEmbed = role === 'owner' || role === 'co-owner';
+		const settings = await getOrCreateSettings(process.env.MAIN_GUILD_ID || 'default');
+		const { tempVoiceEnabled, tempVoiceHubChannelId, tempVoiceCategoryId, tempVoiceLogChannelId, tempVoiceEmojis, tempVoiceDmEmbed, tempVoiceControlEmbed, tempVoiceAccessRoleIds } = req.body;
+		if (typeof tempVoiceEnabled === 'boolean' && canEditEmbed) settings.tempVoiceEnabled = tempVoiceEnabled;
+		if (isOwner) {
+			if (tempVoiceHubChannelId !== undefined) settings.tempVoiceHubChannelId = tempVoiceHubChannelId || '';
+			if (tempVoiceCategoryId !== undefined) settings.tempVoiceCategoryId = tempVoiceCategoryId || '';
+			if (tempVoiceLogChannelId !== undefined) settings.tempVoiceLogChannelId = tempVoiceLogChannelId || '';
+			if (tempVoiceEmojis !== undefined) settings.tempVoiceEmojis = tempVoiceEmojis || '';
+			if (tempVoiceAccessRoleIds !== undefined) settings.tempVoiceAccessRoleIds = tempVoiceAccessRoleIds || '';
+		}
+		if (canEditEmbed && tempVoiceDmEmbed) settings.tempVoiceDmEmbed = parseEmbed(tempVoiceDmEmbed) || settings.tempVoiceDmEmbed;
+		if (canEditEmbed && tempVoiceControlEmbed) settings.tempVoiceControlEmbed = parseEmbed(tempVoiceControlEmbed) || settings.tempVoiceControlEmbed;
+		await settings.save();
+		return res.json({ ok: true, settings });
+	} catch (error) {
+		console.error('Update tempvoice settings error:', error);
+		return res.status(400).json({ ok: false, error: error.message || 'update_failed' });
+	}
+});
+
+router.get('/bot-stats', requireSession, requireNotTimedOut, async (req, res) => {
 	try {
 		const guildId = process.env.MAIN_GUILD_ID || 'default';
 		const stats = await getBotStats(guildId);
@@ -303,12 +453,94 @@ router.get('/bot-stats', requireSession, async (req, res) => {
 	}
 });
 
+// Owner-only: delete account (cannot delete owner accounts)
+router.delete('/accounts/:id', requireSession, requireNotTimedOut, async (req, res) => {
+  try {
+    const { role } = req.session;
+    if (role !== 'owner') {
+      return res.status(403).json({ ok: false, error: 'forbidden' });
+    }
+    const target = await User.findById(req.params.id);
+    if (!target) {
+      return res.status(404).json({ ok: false, error: 'not_found' });
+    }
+    if (target.role === 'owner') {
+      return res.status(400).json({ ok: false, error: 'cannot_delete_owner' });
+    }
+    await target.deleteOne();
+    return res.json({ ok: true });
+  } catch (error) {
+    console.error('Delete account error:', error);
+    return res.status(500).json({ ok: false, error: 'internal_error' });
+  }
+});
+
+// Owner-only: timeout account (cannot timeout owner), via query (?time=&user=) or body { time|duration, user }
+router.post('/timeoutaccount', requireSession, requireNotTimedOut, async (req, res) => {
+  try {
+    const { role } = req.session;
+    if (role !== 'owner') {
+      return res.status(403).json({ ok: false, error: 'forbidden' });
+    }
+    const timeParam = req.query.time || req.query.duration || req.body?.time || req.body?.duration;
+    const userParam = req.query.user || req.body?.user;
+    if (!timeParam || !userParam) {
+      return res.status(400).json({ ok: false, error: 'time and user are required' });
+    }
+    const durationMs = ms(String(timeParam)) || Number(timeParam);
+    if (!durationMs || durationMs <= 0) {
+      return res.status(400).json({ ok: false, error: 'invalid_duration' });
+    }
+
+    // Resolve user by id or username
+    let target = null;
+    if (/^[a-fA-F0-9]{24}$/.test(String(userParam))) {
+      target = await User.findById(userParam);
+    }
+    if (!target) {
+      target = await User.findOne({ username: userParam });
+    }
+    if (!target) {
+      return res.status(404).json({ ok: false, error: 'user_not_found' });
+    }
+    if (target.role === 'owner') {
+      return res.status(400).json({ ok: false, error: 'cannot_timeout_owner' });
+    }
+
+    target.webTimeoutUntil = new Date(Date.now() + durationMs);
+    await target.save();
+    return res.json({ ok: true, userId: target._id.toString(), until: target.webTimeoutUntil });
+  } catch (error) {
+    console.error('Timeout account error:', error);
+    return res.status(500).json({ ok: false, error: 'internal_error' });
+  }
+});
+
+// Current user's timeout status (usable while timed out)
+router.get('/userstimoutes', requireSession, async (req, res) => {
+  try {
+    const user = await User.findById(req.session.userId);
+    let timedOut = false;
+    let until = null;
+    let remainingMs = 0;
+    if (user?.webTimeoutUntil && user.webTimeoutUntil > new Date()) {
+      timedOut = true;
+      until = user.webTimeoutUntil;
+      remainingMs = until.getTime() - Date.now();
+    }
+    return res.json({ ok: true, timedOut, remainingMs, until });
+  } catch (error) {
+    console.error('Fetch user timeout status error:', error);
+    return res.status(500).json({ ok: false, error: 'internal_error' });
+  }
+});
+
 function parseEmbed(dmEmbed) {
 	if (!dmEmbed) return undefined;
 	const result = {
 		title: dmEmbed.title || 'Moderation Notice',
 		description: dmEmbed.description || '',
-		color: dmEmbed.color ? Number(dmEmbed.color) : undefined,
+		color: normalizeColor(dmEmbed.color),
 		fields: []
 	};
 	if (Array.isArray(dmEmbed.fields)) {
@@ -321,6 +553,22 @@ function parseEmbed(dmEmbed) {
 			}));
 	}
 	return result;
+}
+
+function normalizeColor(val) {
+	if (val === undefined || val === null || val === '') return undefined;
+	if (typeof val === 'number') return val;
+	if (typeof val === 'string') {
+		const v = val.trim();
+		if (v.startsWith('#')) {
+			const hex = v.slice(1);
+			const n = parseInt(hex, 16);
+			return isNaN(n) ? undefined : n;
+		}
+		const n = Number(v);
+		return isNaN(n) ? undefined : n;
+	}
+	return undefined;
 }
 
 export default router;

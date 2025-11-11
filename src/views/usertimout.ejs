@@ -1,0 +1,26 @@
+<section class="dashboard timeout-page">
+  <header class="page-hero">
+    <div>
+      <h1>Account Temporarily Disabled</h1>
+      <p class="muted">Your access is limited until the timeout expires.</p>
+    </div>
+  </header>
+  <div class="card-stack">
+    <article class="card">
+      <header class="card-head">
+        <div>
+          <h2>Time Remaining</h2>
+          <p class="muted">You will regain access when the timer reaches zero.</p>
+        </div>
+      </header>
+      <div class="form-grid">
+        <div class="panel">
+          <div id="countdown" style="font-size:1.25rem; font-weight:600;text-align:center;">Calculating…</div>
+        </div>
+      </div>
+    </article>
+  </div>
+</section>
+
+<script id="timeout-data" type="application/json"><%- JSON.stringify({ remainingMs: typeof remainingMs === 'number' ? remainingMs : 0 }) %></script>
+<script src="/public/js/usertimout.js"></script>

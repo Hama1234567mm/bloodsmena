@@ -53,6 +53,22 @@ const GuildSettingsSchema = new mongoose.Schema(
 		verifyBoyRoleId: { type: String, default: '' },
 		verifyGirlRoleId: { type: String, default: '' },
 		verifyEnabled: { type: Boolean, default: true },
+		autoReplies: { type: [
+			{
+				trigger: { type: String, required: true },
+				response: { type: String, required: true },
+				matchType: { type: String, enum: ['starts', 'contains', 'ends'], default: 'contains' }
+			}
+		], default: [] },
+		// Temp voice system settings
+		tempVoiceEnabled: { type: Boolean, default: false },
+		tempVoiceHubChannelId: { type: String, default: '' },
+		tempVoiceCategoryId: { type: String, default: '' },
+		tempVoiceLogChannelId: { type: String, default: '' },
+		tempVoiceEmojis: { type: String, default: '🎧,🎵' },
+		tempVoiceAccessRoleIds: { type: String, default: '' },
+		tempVoiceDmEmbed: { type: VerifyEmbedSchema, default: () => ({}) },
+		tempVoiceControlEmbed: { type: VerifyEmbedSchema, default: () => ({}) },
 		dmEmbed: { type: DMEmbedSchema, default: () => ({}) },
 		disputeEmbed: { type: DisputeEmbedSchema, default: () => ({}) },
 		verifyEmbed: { type: VerifyEmbedSchema, default: () => ({}) },

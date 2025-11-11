@@ -42,6 +42,10 @@
 						<option value="timeout">Timeout</option>
 						<option value="voice_mute">Force Voice Mute</option>
 						<option value="voice_deafen">Force Voice Deafen</option>
+						<% if (role === 'owner' || role === 'co-owner') { %>
+						<option value="kick">Kick</option>
+						<option value="ban">Ban</option>
+						<% } %>
 					</select>
 				</div>
 				<div class="form-row" data-action="timeout">
@@ -57,6 +61,7 @@
 					<button type="button" class="btn btn-secondary" id="force-action">Force run</button>
 				</div>
 				<p class="form-hint">Force run ignores disabled state and attempts the action.</p>
+				<p class="form-hint">Voice Mute and Voice Deafen will auto-remove after 10 minutes by default if no custom duration is provided.</p>
 			</form>
 			<aside class="card-footer" id="punish-feedback"></aside>
 		</article>
@@ -127,6 +132,33 @@
 				</div>
 			</form>
 			<aside class="card-footer" id="settings-feedback"></aside>
+		</article>
+		<% } %>
+
+		<% if (canEditPunishments) { %>
+		<article class="card">
+			<header class="card-head">
+				<div>
+					<h2>Active Voice Mutes/Deafens</h2>
+					<p class="muted">Currently enforced voice actions and remaining time</p>
+				</div>
+			</header>
+			<div class="form-grid">
+				<div class="form-row full">
+					<div class="code" style="max-height: 340px; overflow: auto;">
+						<table style="width:100%; border-collapse: collapse;" id="voice-actions-table">
+							<thead>
+								<tr>
+									<th style="text-align:left; padding:6px;">User</th>
+									<th style="text-align:left; padding:6px;">Type</th>
+									<th style="text-align:left; padding:6px;">Expires In</th>
+								</tr>
+							</thead>
+							<tbody id="voice-actions-body"></tbody>
+						</table>
+					</div>
+				</div>
+			</div>
 		</article>
 		<% } %>
 	</div>

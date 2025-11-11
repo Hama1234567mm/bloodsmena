@@ -6,6 +6,7 @@ import { PunishmentLog } from '../models/PunishmentLog.js';
 
 const WARN_THRESHOLD = 3;
 const AUTO_TIMEOUT_DURATION = ms('1h');
+const activeVoiceActions = new Map(); // key: `${guildId}:${userId}` -> { guildId, userId, type: 'mute'|'deafen', expiresAt }
 
 export function roleAllowsPunishments(role) {
 	return ['owner', 'co-owner', 'admin'].includes(role);
@@ -113,12 +114,9 @@ export async function performPunishment({ guildId, actor, targetUserId, reason, 
 		throw new Error('Bot has no roles assigned. Please assign a role to the bot.');
 	}
 	const settings = await getOrCreateSettings(guildId);
-	// Check if system is disabled (explicitly false, not undefined/null)
+	// If system is disabled, perform no action and return a neutral response
 	if (settings.punishmentsEnabled === false && !force) {
-		if (actor.role !== 'owner' && actor.role !== 'co-owner') {
-			throw new Error('Punish system off');
-		}
-		throw new Error('Punishments are currently disabled.');
+		return { warnCount: 0, skipped: true };
 	}
 	const placeholders = {
 		reason: reason || 'No reason provided',
@@ -153,6 +151,10 @@ export async function performPunishment({ guildId, actor, targetUserId, reason, 
 			}
 			break;
 		case 'ban':
+			// Only owner or co-owner can ban
+			if (actor.role !== 'owner' && actor.role !== 'co-owner') {
+				throw new Error('Only owner or co-owner can ban');
+			}
 			// Try to send DM before ban (user might still be in server)
 			try {
 				await member.send({ embeds: [embed] }).catch(() => null);
@@ -169,6 +171,10 @@ export async function performPunishment({ guildId, actor, targetUserId, reason, 
 			}
 			break;
 		case 'kick':
+			// Only owner or co-owner can kick
+			if (actor.role !== 'owner' && actor.role !== 'co-owner') {
+				throw new Error('Only owner or co-owner can kick');
+			}
 			// Send DM before kick
 			try {
 				await member.send({ embeds: [embed] }).catch(() => null);
@@ -187,15 +193,17 @@ export async function performPunishment({ guildId, actor, targetUserId, reason, 
 		case 'voice_mute':
 			// Send DM before voice mute
 			try {
-				await member.send({ embeds: [embed] }).catch(() => null);
-			} catch (err) {
-				console.warn('Failed to send voice mute DM:', err.message);
-			}
-			try {
 				if (!member.voice?.channel) {
 					throw new Error('User is not in a voice channel');
 				}
 				await member.voice.setMute(true, reason);
+				// Auto unmute after default 10 minutes if no duration provided
+				const unmuteDelay = duration && duration > 0 ? duration : ms('10m');
+				activeVoiceActions.set(`${guildId}:${member.id}`, { guildId, userId: member.id, type: 'mute', expiresAt: Date.now() + unmuteDelay });
+				setTimeout(async () => {
+					try { await member.voice.setMute(false, 'Auto unmute after default duration'); } catch {}
+					activeVoiceActions.delete(`${guildId}:${member.id}`);
+				}, unmuteDelay);
 			} catch (err) {
 				if (err.code === 50013 || err.message?.includes('Missing Permissions') || err.message?.includes('permission')) {
 					throw new Error(`Cannot mute user: Bot lacks permissions or bot's role is too low.`);
@@ -206,15 +214,17 @@ export async function performPunishment({ guildId, actor, targetUserId, reason, 
 		case 'voice_deafen':
 			// Send DM before voice deafen
 			try {
-				await member.send({ embeds: [embed] }).catch(() => null);
-			} catch (err) {
-				console.warn('Failed to send voice deafen DM:', err.message);
-			}
-			try {
 				if (!member.voice?.channel) {
 					throw new Error('User is not in a voice channel');
 				}
 				await member.voice.setDeaf(true, reason);
+				// Auto undeafen after default 10 minutes if no duration provided
+				const undeafenDelay = duration && duration > 0 ? duration : ms('10m');
+				activeVoiceActions.set(`${guildId}:${member.id}`, { guildId, userId: member.id, type: 'deafen', expiresAt: Date.now() + undeafenDelay });
+				setTimeout(async () => {
+					try { await member.voice.setDeaf(false, 'Auto undeafen after default duration'); } catch {}
+					activeVoiceActions.delete(`${guildId}:${member.id}`);
+				}, undeafenDelay);
 			} catch (err) {
 				if (err.code === 50013 || err.message?.includes('Missing Permissions') || err.message?.includes('permission')) {
 					throw new Error(`Cannot deafen user: Bot lacks permissions or bot's role is too low.`);
@@ -346,5 +356,9 @@ async function logAction({ guildId, targetUserId, targetTag, action, reason, dur
 		performedByName: actor.username,
 		performedByRole: actor.role
 	});
+}
+
+export function getActiveVoiceActions() {
+	return Array.from(activeVoiceActions.values());
 }
 

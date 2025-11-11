@@ -1,4 +1,115 @@
 <section class="dashboard">
+	<header class="page-hero">
+		<div>
+			<h1>Dashboard</h1>
+			<p class="muted">Welcome back, <%= username %>. Manage your server tools and view bot status.</p>
+		</div>
+		<div class="badge">Guild: <%= (botStats && botStats.guild) ? botStats.guild.name : 'N/A' %></div>
+	</header>
 
+	<div class="card-stack">
+		<article class="card">
+			<header class="card-head">
+				<div>
+					<h2>Bot Status</h2>
+					<p class="muted">Runtime, performance and presence</p>
+				</div>
+			</header>
+			<div class="form-grid">
+				<div class="panel">
+					<div style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+						<div>
+							<div class="page-heading" style="margin-bottom:8px;">Presence</div>
+							<div style="display:flex; gap:18px; align-items:center;">
+                                <span>Status: <strong class="<%= (botStats && botStats.online) ? 'text-online' : 'text-offline' %>"><%= botStats && botStats.online ? 'Online' : 'Offline' %></strong></span>
+								<span>Ping: <strong><%= botStats ? botStats.ping : 0 %>ms</strong></span>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="panel">
+					<div class="page-heading" style="margin-bottom:8px;">Guild</div>
+					<div style="display:flex; gap:18px; align-items:center; flex-wrap:wrap;">
+						<span>ID: <strong><%= (botStats && botStats.guild) ? botStats.guild.id : 'N/A' %></strong></span>
+						<span>Members: <strong><%= (botStats && botStats.guild) ? botStats.guild.memberCount : 0 %></strong></span>
+					</div>
+				</div>
+			</div>
+		</article>
+
+		<article class="card">
+			<header class="card-head">
+				<div>
+					<h2>Systems</h2>
+					<p class="muted">At-a-glance status for key systems</p>
+				</div>
+			</header>
+			<div class="form-grid">
+				<div class="panel">
+					<div style="display:flex; align-items:center; justify-content:space-between;">
+						<div>
+							<div class="page-heading" style="margin-bottom:8px;">Punishments</div>
+							<div class="muted">Warnings, kicks, bans and DMs</div>
+						</div>
+					</div>
+					<div class="form-actions" style="margin-top:12px;">
+						<a href="/punshmint" class="btn btn-secondary">Open Punishments</a>
+					</div>
+				</div>
+				<div class="panel">
+					<div style="display:flex; align-items:center; justify-content:space-between;">
+						<div>
+							<div class="page-heading" style="margin-bottom:8px;">Disputes</div>
+							<div class="muted">Auto-disconnect for disputed pairs</div>
+						</div>
+					</div>
+					<div class="form-actions" style="margin-top:12px;">
+						<a href="/dispute" class="btn btn-secondary">Open Disputes</a>
+					</div>
+				</div>
+				<div class="panel">
+					<div style="display:flex; align-items:center; justify-content:space-between;">
+						<div>
+							<div class="page-heading" style="margin-bottom:8px;">Verification</div>
+							<div class="muted">Join-to-verify and role assignment</div>
+						</div>
+					</div>
+					<% if (role === 'owner' || role === 'co-owner') { %>
+					<div class="form-actions" style="margin-top:12px;">
+						<a href="/verify" class="btn btn-secondary">Open Verification</a>
+					</div>
+					<% } %>
+				</div>
+				<% if (role === 'owner' || role === 'co-owner') { %>
+				<div class="panel">
+					<div style="display:flex; align-items:center; justify-content:space-between;">
+						<div>
+							<div class="page-heading" style="margin-bottom:8px;">Temp Voice</div>
+							<div class="muted">Auto personal voice channels with controls</div>
+						</div>
+					</div>
+					<div class="form-actions" style="margin-top:12px;">
+						<a href="/tempvoice" class="btn btn-secondary">Open Temp Voice</a>
+					</div>
+				</div>
+				<% } %>
+					<div class="panel">
+					<div style="display:flex; align-items:center; justify-content:space-between;">
+						<div>
+							<div class="page-heading" style="margin-bottom:8px;">AutoReplay</div>
+							<div class="muted">Auto personal reply with Control</div>
+						</div>
+					</div>
+				<% if (role === 'owner' ) { %>
+					<div class="form-actions" style="margin-top:12px;">
+						<a href="/autoreply" class="btn btn-secondary">Open AutoReply</a>
+					</div>
+				<% } %>
+				</div>
+			</div>
+		</article>
+	</div>
 </section>
+<script id="dashboard-data" type="application/json"><%- JSON.stringify({ uptime: botStats ? botStats.uptime : 0 }) %></script>
+<script src="/public/js/dash.js"></script>
 

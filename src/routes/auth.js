@@ -5,9 +5,23 @@ import { getBotStats, getSystemStatus } from '../services/botStatsService.js';
 
 const router = express.Router();
 
-function requireAuth(req, res, next) {
-	if (req.session && req.session.userId) return next();
-	return res.redirect('/login');
+async function requireAuth(req, res, next) {
+    if (!req.session || !req.session.userId) return res.redirect('/login');
+    try {
+        const user = await User.findById(req.session.userId);
+        if (user?.webTimeoutUntil && user.webTimeoutUntil > new Date()) {
+            const remainingMs = user.webTimeoutUntil.getTime() - Date.now();
+            return res.render('usertimout', {
+                title: 'Account Timeout',
+                remainingMs,
+                hideNav: false
+            });
+        }
+        return next();
+    } catch (err) {
+        console.error('Auth timeout check error:', err);
+        return res.redirect('/login');
+    }
 }
 
 router.get('/', requireAuth, async (req, res) => {
@@ -26,12 +40,22 @@ router.get('/', requireAuth, async (req, res) => {
 });
 
 router.get('/login', (req, res) => {
-	res.render('login', { 
-		title: 'Login', 
-		layout: false,
-		error: req.flash('error'),
-		success: req.flash('success')
-	});
+    res.render('login', { 
+        title: 'Login', 
+        layout: false,
+        error: req.flash('error'),
+        success: req.flash('success')
+    });
+});
+
+// Preview/Direct timeout page (for testing or direct linking)
+router.get('/timeout', async (req, res) => {
+    const msVal = Number(req.query.ms || 0);
+    const remainingMs = msVal > 0 ? msVal : 0;
+    res.render('usertimout', {
+        title: 'Account Timeout',
+        remainingMs
+    });
 });
 
 router.post('/login', async (req, res) => {
@@ -148,6 +172,74 @@ router.get('/verify', requireAuth, async (req, res) => {
 		title: 'Verification',
 		settings,
 		canEditEmbed,
+		isOwner,
+		mainGuildId: guildId
+	});
+});
+
+router.get('/logs', requireAuth, async (req, res) => {
+	try {
+		const { role } = req.session;
+		if (role !== 'owner') {
+			req.flash('error', 'You do not have access to this section.');
+			return res.redirect('/');
+		}
+		const guildId = process.env.MAIN_GUILD_ID || 'default';
+		const [{ User }] = await Promise.all([import('../models/User.js')]);
+		const [{ PunishmentLog }] = await Promise.all([import('../models/PunishmentLog.js')]);
+		const users = await User.find({}).sort({ username: 1 }).lean();
+		const actions = await PunishmentLog.find({ guildId }).sort({ createdAt: -1 }).limit(100).lean();
+		return res.render('logs', {
+			title: 'Logs',
+			users,
+			actions
+		});
+	} catch (err) {
+		console.error('Logs page error:', err);
+		req.flash('error', 'Failed to load logs.');
+		return res.redirect('/');
+	}
+});
+
+router.get('/autoreply', requireAuth, async (req, res) => {
+	const { role } = req.session;
+	if (role !== 'owner') {
+		req.flash('error', 'You do not have access to this section.');
+		return res.redirect('/');
+	}
+	const guildId = process.env.MAIN_GUILD_ID || 'default';
+	const settings = await getOrCreateSettings(guildId);
+	return res.render('autoreply', {
+		title: 'Auto Reply',
+		replies: settings.autoReplies || []
+	});
+});
+
+// Owner-only: Account Manager page
+router.get('/manager', requireAuth, async (req, res) => {
+  const { role } = req.session;
+  if (role !== 'owner') {
+    req.flash('error', 'You do not have access to this section.');
+    return res.redirect('/');
+  }
+  return res.render('manager', {
+    title: 'Account Manager'
+  });
+});
+
+router.get('/tempvoice', requireAuth, async (req, res) => {
+	const { role } = req.session;
+	const guildId = process.env.MAIN_GUILD_ID || 'default';
+	const settings = await getOrCreateSettings(guildId);
+	const canView = role === 'owner' || role === 'co-owner';
+	const isOwner = role === 'owner';
+	if (!canView) {
+		req.flash('error', 'You do not have access to this section.');
+		return res.redirect('/');
+	}
+	res.render('tempvoice', {
+		title: 'Temp Voice',
+		settings,
 		isOwner,
 		mainGuildId: guildId
 	});
